@@ -1,0 +1,46 @@
+FROM ubuntu
+
+# Update package lists and install required packages
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    qemu-kvm \
+    *zenhei* \
+    xz-utils \
+    dbus-x11 \
+    curl \
+    firefox \
+    gnome-system-monitor \
+    mate-system-monitor \
+    git \
+    xfce4 \
+    xfce4-terminal \
+    tightvncserver \
+    wget
+
+# Download and install noVNC
+RUN wget https://github.com/novnc/noVNC/archive/refs/tags/v1.2.0.tar.gz && \
+    tar -xvf v1.2.0.tar.gz && \
+    mv noVNC-1.2.0 /noVNC
+
+# Install proot
+RUN curl -LO https://proot.gitlab.io/proot/bin/proot && \
+    chmod 755 proot && \
+    mv proot /bin
+
+# Create a directory for VNC configuration
+RUN mkdir $HOME/.vnc
+
+# Set VNC password
+RUN echo 'luo' | vncpasswd -f > $HOME/.vnc/passwd && \
+    chmod 600 $HOME/.vnc/passwd
+
+# Create and configure the startup script
+RUN echo 'whoami' >> /luo.sh && \
+    echo 'cd' >> /luo.sh && \
+    echo "su -l -c 'vncserver :1 -geometry 1280x800'" >> /luo.sh && \
+    echo 'cd /noVNC' >> /luo.sh && \
+    echo './utils/launch.sh --vnc localhost:5901 --listen 8900' >> /luo.sh && \
+    chmod 755 /luo.sh
+
+EXPOSE 8900
+
+CMD ["/bin/bash", "/luo.sh"]
